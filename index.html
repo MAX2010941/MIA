@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>COPITO TE AMO ❄️❤️</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    let particulas = [];
+    let elementosFondo = [];
+
+    // --- CONFIGURACIÓN ---
+    const texto = "MIA TE AMO ❄️❤️"; 
+    const densidad = 3;          
+    const colorTexto = "#ffb7c5"; 
+    const velocidadTexto = 0.03; // Un poco más rápido para que se forme antes
+    const iconos = ["❄️", "❤️"];   
+    // ---------------------
+
+    class ElementoFlotante {
+        constructor() { this.reset(); }
+        reset() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * -canvas.height; 
+            this.size = Math.random() * 15 + 12;
+            this.char = iconos[Math.floor(Math.random() * iconos.length)];
+            this.speed = Math.random() * 0.8 + 0.5; 
+            this.wind = Math.random() * 0.6 - 0.3;  
+            this.opacity = Math.random() * 0.5 + 0.2;
+        }
+        update() {
+            this.y += this.speed;
+            this.x += this.wind;
+            if (this.y > canvas.height) this.reset();
+        }
+        draw() {
+            ctx.globalAlpha = this.opacity;
+            ctx.font = `${this.size}px serif`;
+            ctx.fillText(this.char, this.x, this.y);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    function inicializar() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particulas = [];
+        elementosFondo = [];
+
+        for(let i = 0; i < 40; i++) {
+            elementosFondo.push(new ElementoFlotante());
+        }
+
+        // Dibujar texto oculto para escanear
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        // Tamaño dinámico según el ancho de pantalla
+        let fontSize = Math.min(canvas.width / 10, 80); 
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(texto, canvas.width / 2, canvas.height / 2);
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let y = 0; y < canvas.height; y += densidad) {
+            for (let x = 0; x < canvas.width; x += densidad) {
+                const index = (y * canvas.width + x) * 4;
+                if (imgData[index + 3] > 128) { 
+                    particulas.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        destX: x,
+                        destY: y,
+                        size: 1.5
+                    });
+                }
+            }
+        }
+    }
+
+    function animar() {
+        // Fondo con rastro
+        ctx.fillStyle = "black";
+        ctx.globalAlpha = 0.15;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1.0;
+
+        elementosFondo.forEach(el => {
+            el.update();
+            el.draw();
+        });
+
+        ctx.fillStyle = colorTexto;
+        for (let i = 0; i < particulas.length; i++) {
+            let p = particulas[i];
+            p.x += (p.destX - p.x) * velocidadTexto;
+            p.y += (p.destY - p.y) * velocidadTexto;
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        requestAnimationFrame(animar);
+    }
+
+    window.onload = () => {
+        inicializar();
+        animar();
+    };
+
+    window.onresize = inicializar;
+</script>
+</body>
+</html>
